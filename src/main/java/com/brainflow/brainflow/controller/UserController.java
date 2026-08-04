@@ -49,4 +49,20 @@ public class UserController {
         );
         return ResponseEntity.ok(response);
     }
+
+    @GetMapping
+    @org.springframework.security.access.prepost.PreAuthorize("hasRole('ADMIN')")
+    public ResponseEntity<java.util.List<UserResponseDTO>> getAllUsers() {
+        java.util.List<UserResponseDTO> users = userService.getAllUsers().stream()
+                .map(user -> new UserResponseDTO(
+                        user.getId(),
+                        user.getUsername(),
+                        user.getEmail(),
+                        user.getSystemRole(),
+                        user.getCreatedAt(),
+                        user.getUpdatedAt()
+                ))
+                .collect(java.util.stream.Collectors.toList());
+        return ResponseEntity.ok(users);
+    }
 }
