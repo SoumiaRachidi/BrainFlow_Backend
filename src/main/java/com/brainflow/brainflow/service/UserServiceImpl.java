@@ -34,7 +34,7 @@ public class UserServiceImpl implements UserService {
         user.setUsername(registrationDto.getUsername());
         user.setEmail(registrationDto.getEmail());
         user.setPasswordHash(passwordEncoder.encode(registrationDto.getPassword()));
-        user.setSystemRole(SystemRole.USER);
+        user.setSystemRole(SystemRole.ANIMATOR);
 
         return userRepository.save(user);
     }

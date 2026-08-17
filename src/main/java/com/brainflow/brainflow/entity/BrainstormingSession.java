@@ -8,12 +8,14 @@ import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
 import jakarta.persistence.PrePersist;
+import jakarta.persistence.PreUpdate;
 import jakarta.persistence.Table;
+import jakarta.persistence.Transient;
 
 import java.time.LocalDateTime;
 
 @Entity
-@Table(name = "brainstorming_sessions")
+@Table(name = "brainstorm_sessions")
 public class BrainstormingSession {
 
     @Id
@@ -23,29 +25,40 @@ public class BrainstormingSession {
     @Column(nullable = false)
     private String title;
 
-    @Column(nullable = false, length = 1000)
-    private String description;
-
     @Enumerated(EnumType.STRING)
     @Column(nullable = false)
     private SessionStatus status;
 
-    @Column(nullable = false)
-    private String createdBy;
+    @Column(name = "created_by_user_id", nullable = false)
+    private Long createdByUserId;
 
-    @Column(nullable = false, updatable = false)
+    @Column(name = "allow_guest_voting")
+    private Boolean allowGuestVoting;
+
+    @Column(name = "created_at", nullable = false, updatable = false)
     private LocalDateTime createdAt = LocalDateTime.now();
+
+    @Column(name = "updated_at", nullable = false)
+    private LocalDateTime updatedAt;
+
+    @Column(name = "invite_token", unique = true)
+    private String inviteToken;
+
+    @Transient
+    private String creatorEmail;
 
     public BrainstormingSession() {
     }
 
-    public BrainstormingSession(Long id, String title, String description, SessionStatus status, String createdBy, LocalDateTime createdAt) {
+    public BrainstormingSession(Long id, String title, SessionStatus status, Long createdByUserId, Boolean allowGuestVoting, LocalDateTime createdAt, LocalDateTime updatedAt, String inviteToken) {
         this.id = id;
         this.title = title;
-        this.description = description;
         this.status = status;
-        this.createdBy = createdBy;
+        this.createdByUserId = createdByUserId;
+        this.allowGuestVoting = allowGuestVoting;
         this.createdAt = createdAt;
+        this.updatedAt = updatedAt;
+        this.inviteToken = inviteToken;
     }
 
     @PrePersist
@@ -53,6 +66,25 @@ public class BrainstormingSession {
         if (this.createdAt == null) {
             this.createdAt = LocalDateTime.now();
         }
+        if (this.updatedAt == null) {
+            this.updatedAt = LocalDateTime.now();
+        }
+        if (this.inviteToken == null) {
+            this.inviteToken = java.util.UUID.randomUUID().toString();
+        }
+    }
+
+    @PreUpdate
+    public void preUpdate() {
+        this.updatedAt = LocalDateTime.now();
+    }
+
+    public String getCreatorEmail() {
+        return creatorEmail;
+    }
+
+    public void setCreatorEmail(String creatorEmail) {
+        this.creatorEmail = creatorEmail;
     }
 
     public Long getId() {
@@ -71,14 +103,6 @@ public class BrainstormingSession {
         this.title = title;
     }
 
-    public String getDescription() {
-        return description;
-    }
-
-    public void setDescription(String description) {
-        this.description = description;
-    }
-
     public SessionStatus getStatus() {
         return status;
     }
@@ -87,12 +111,20 @@ public class BrainstormingSession {
         this.status = status;
     }
 
-    public String getCreatedBy() {
-        return createdBy;
+    public Long getCreatedByUserId() {
+        return createdByUserId;
     }
 
-    public void setCreatedBy(String createdBy) {
-        this.createdBy = createdBy;
+    public void setCreatedByUserId(Long createdByUserId) {
+        this.createdByUserId = createdByUserId;
+    }
+
+    public Boolean getAllowGuestVoting() {
+        return allowGuestVoting;
+    }
+
+    public void setAllowGuestVoting(Boolean allowGuestVoting) {
+        this.allowGuestVoting = allowGuestVoting;
     }
 
     public LocalDateTime getCreatedAt() {
@@ -101,5 +133,21 @@ public class BrainstormingSession {
 
     public void setCreatedAt(LocalDateTime createdAt) {
         this.createdAt = createdAt;
+    }
+
+    public LocalDateTime getUpdatedAt() {
+        return updatedAt;
+    }
+
+    public void setUpdatedAt(LocalDateTime updatedAt) {
+        this.updatedAt = updatedAt;
+    }
+
+    public String getInviteToken() {
+        return inviteToken;
+    }
+
+    public void setInviteToken(String inviteToken) {
+        this.inviteToken = inviteToken;
     }
 }

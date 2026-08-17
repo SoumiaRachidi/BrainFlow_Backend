@@ -4,6 +4,7 @@ import com.brainflow.brainflow.dto.request.UserRegistrationDto;
 import com.brainflow.brainflow.dto.response.UserResponseDTO;
 import com.brainflow.brainflow.entity.User;
 import com.brainflow.brainflow.service.UserService;
+import com.brainflow.brainflow.service.BrainstormingSessionService;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
@@ -21,9 +22,11 @@ import org.springframework.web.bind.annotation.RestController;
 public class UserController {
 
     private final UserService userService;
+    private final BrainstormingSessionService brainstormingSessionService;
 
-    public UserController(UserService userService) {
+    public UserController(UserService userService, BrainstormingSessionService brainstormingSessionService) {
         this.userService = userService;
+        this.brainstormingSessionService = brainstormingSessionService;
     }
 
     @PostMapping("/register")
@@ -48,6 +51,11 @@ public class UserController {
                 user.getUpdatedAt()
         );
         return ResponseEntity.ok(response);
+    }
+
+    @GetMapping("/me/sessions")
+    public ResponseEntity<?> getMySessions(@AuthenticationPrincipal UserDetails userDetails) {
+        return ResponseEntity.ok(brainstormingSessionService.getSessionsByUserEmail(userDetails.getUsername()));
     }
 
     @GetMapping
