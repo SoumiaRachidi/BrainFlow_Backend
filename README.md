@@ -44,6 +44,3 @@ The core backend service for **BrainFlow**, a full-stack ticketing and managemen
     mvn spring-boot:run
     ```
     The server will start on `http://localhost:8080`.
-
-## 👨‍💻 Author
-*   **Souma** - [GitHub Profile](https://github.com/SoumiaRachidi)
