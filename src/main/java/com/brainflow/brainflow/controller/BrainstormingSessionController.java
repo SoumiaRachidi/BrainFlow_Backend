@@ -78,4 +78,25 @@ public class BrainstormingSessionController {
         brainstormingSessionService.approveParticipant(id, userId);
         return ResponseEntity.ok().build();
     }
+
+    @PutMapping("/{id}/participants/{userId}/reject")
+    public ResponseEntity<Void> rejectParticipant(@PathVariable Long id, @PathVariable Long userId) {
+        brainstormingSessionService.rejectParticipant(id, userId);
+        return ResponseEntity.ok().build();
+    }
+
+    @PutMapping("/{id}/terminate")
+    public ResponseEntity<?> terminateSession(@PathVariable Long id, Authentication authentication) {
+        if (authentication == null || !authentication.isAuthenticated()) {
+            return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body("Utilisateur non authentifié");
+        }
+        try {
+            BrainstormingSession terminated = brainstormingSessionService.terminateSession(id, authentication.getName());
+            return ResponseEntity.ok(terminated);
+        } catch (org.springframework.web.server.ResponseStatusException e) {
+            return ResponseEntity.status(e.getStatusCode()).body(e.getReason());
+        } catch (RuntimeException e) {
+            return ResponseEntity.badRequest().body(e.getMessage());
+        }
+    }
 }

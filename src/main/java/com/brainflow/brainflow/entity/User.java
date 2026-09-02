@@ -34,6 +34,9 @@ public class User {
     @Column(nullable = false)
     private SystemRole systemRole;
 
+    @Column(nullable = false, columnDefinition = "boolean default true")
+    private boolean approved = true;
+
     @CreationTimestamp
     @Column(nullable = false, updatable = false)
     private LocalDateTime createdAt;
@@ -83,6 +86,14 @@ public class User {
 
     public void setSystemRole(SystemRole systemRole) {
         this.systemRole = systemRole;
+    }
+
+    public boolean isApproved() {
+        return approved;
+    }
+
+    public void setApproved(boolean approved) {
+        this.approved = approved;
     }
 
     public LocalDateTime getCreatedAt() {

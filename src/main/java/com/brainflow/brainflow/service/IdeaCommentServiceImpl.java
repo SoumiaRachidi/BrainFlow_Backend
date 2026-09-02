@@ -2,8 +2,10 @@ package com.brainflow.brainflow.service;
 
 import com.brainflow.brainflow.dto.request.CommentRequestDTO;
 import com.brainflow.brainflow.dto.response.IdeaCommentResponseDTO;
+import com.brainflow.brainflow.entity.BrainstormingSession;
 import com.brainflow.brainflow.entity.Idea;
 import com.brainflow.brainflow.entity.IdeaComment;
+import com.brainflow.brainflow.entity.NotificationType;
 import com.brainflow.brainflow.entity.User;
 import com.brainflow.brainflow.repository.IdeaCommentRepository;
 import com.brainflow.brainflow.repository.IdeaRepository;
@@ -21,12 +23,19 @@ public class IdeaCommentServiceImpl implements IdeaCommentService {
     private final IdeaCommentRepository commentRepository;
     private final IdeaRepository ideaRepository;
     private final UserRepository userRepository;
+    private final NotificationService notificationService;
 
     @Autowired
-    public IdeaCommentServiceImpl(IdeaCommentRepository commentRepository, IdeaRepository ideaRepository, UserRepository userRepository) {
+    public IdeaCommentServiceImpl(
+            IdeaCommentRepository commentRepository,
+            IdeaRepository ideaRepository,
+            UserRepository userRepository,
+            NotificationService notificationService
+    ) {
         this.commentRepository = commentRepository;
         this.ideaRepository = ideaRepository;
         this.userRepository = userRepository;
+        this.notificationService = notificationService;
     }
 
     @Override
@@ -62,6 +71,29 @@ public class IdeaCommentServiceImpl implements IdeaCommentService {
         comment.setParentId(request.getParentId());
 
         IdeaComment saved = commentRepository.save(comment);
+
+        // Notify Animator when a participant posts a comment/reply
+        BrainstormingSession session = idea.getSession();
+        if (session != null && session.getCreatedByUserId() != null) {
+            if (!session.getCreatedByUserId().equals(user.getId())) {
+                userRepository.findById(session.getCreatedByUserId()).ifPresent(animator -> {
+                    String authorName = (user.getUsername() != null && !user.getUsername().isBlank())
+                            ? user.getUsername()
+                            : user.getEmail();
+                    String ideaExcerpt = idea.getContent() != null ? idea.getContent() : "";
+                    String message = authorName + " a répondu à votre idée : \"" + ideaExcerpt + "\"";
+
+                    notificationService.createNotification(
+                            animator.getEmail(),
+                            "Nouvelle Réponse",
+                            message,
+                            NotificationType.MESSAGE_REPLY,
+                            "/board/" + session.getId()
+                    );
+                });
+            }
+        }
+
         return convertToDTO(saved);
     }
 

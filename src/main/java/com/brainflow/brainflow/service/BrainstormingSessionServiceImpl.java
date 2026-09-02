@@ -5,6 +5,8 @@ import com.brainflow.brainflow.entity.SessionStatus;
 import com.brainflow.brainflow.entity.User;
 import com.brainflow.brainflow.entity.ParticipantStatus;
 import com.brainflow.brainflow.entity.SessionParticipant;
+import com.brainflow.brainflow.entity.NotificationType;
+import com.brainflow.brainflow.entity.SystemRole;
 import com.brainflow.brainflow.dto.response.SessionParticipantDTO;
 import com.brainflow.brainflow.dto.response.ParticipantResponseDTO;
 import com.brainflow.brainflow.repository.BrainstormingSessionRepository;
@@ -15,6 +17,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.web.server.ResponseStatusException;
 
 import java.util.List;
+import java.util.Optional;
 
 @Service
 public class BrainstormingSessionServiceImpl implements BrainstormingSessionService {
@@ -22,14 +25,17 @@ public class BrainstormingSessionServiceImpl implements BrainstormingSessionServ
     private final BrainstormingSessionRepository brainstormingSessionRepository;
     private final UserRepository userRepository;
     private final SessionParticipantRepository sessionParticipantRepository;
+    private final NotificationService notificationService;
 
     public BrainstormingSessionServiceImpl(
             BrainstormingSessionRepository brainstormingSessionRepository,
             UserRepository userRepository,
-            SessionParticipantRepository sessionParticipantRepository) {
+            SessionParticipantRepository sessionParticipantRepository,
+            NotificationService notificationService) {
         this.brainstormingSessionRepository = brainstormingSessionRepository;
         this.userRepository = userRepository;
         this.sessionParticipantRepository = sessionParticipantRepository;
+        this.notificationService = notificationService;
     }
 
     @Override
@@ -100,14 +106,31 @@ public class BrainstormingSessionServiceImpl implements BrainstormingSessionServ
             if (user.getId().equals(session.getCreatedByUserId())) {
                 pStatus = ParticipantStatus.APPROVED;
             } else {
-                SessionParticipant participant = sessionParticipantRepository.findBySessionIdAndUserId(session.getId(), user.getId())
-                        .orElseGet(() -> {
-                            SessionParticipant newParticipant = new SessionParticipant();
-                            newParticipant.setSession(session);
-                            newParticipant.setUser(user);
-                            newParticipant.setStatus(ParticipantStatus.WAITING);
-                            return sessionParticipantRepository.save(newParticipant);
-                        });
+                Optional<SessionParticipant> existingPart = sessionParticipantRepository.findBySessionIdAndUserId(session.getId(), user.getId());
+                SessionParticipant participant;
+                if (existingPart.isEmpty()) {
+                    SessionParticipant newParticipant = new SessionParticipant();
+                    newParticipant.setSession(session);
+                    newParticipant.setUser(user);
+                    newParticipant.setStatus(ParticipantStatus.WAITING);
+                    participant = sessionParticipantRepository.save(newParticipant);
+
+                    // Notify Animator of join request
+                    String participantName = (user.getUsername() != null && !user.getUsername().isBlank())
+                            ? user.getUsername()
+                            : user.getEmail();
+                    notificationService.createActionableNotification(
+                            animator.getEmail(),
+                            "Demande d'Accès Session",
+                            "Le participant " + participantName + " demande à rejoindre la session " + session.getTitle(),
+                            NotificationType.SESSION_JOIN_REQUEST,
+                            "/board/" + session.getId(),
+                            session.getId(),
+                            user.getId()
+                    );
+                } else {
+                    participant = existingPart.get();
+                }
                 pStatus = participant.getStatus();
             }
         }
@@ -176,5 +199,27 @@ public class BrainstormingSessionServiceImpl implements BrainstormingSessionServ
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Participant not found"));
         participant.setStatus(ParticipantStatus.APPROVED);
         sessionParticipantRepository.save(participant);
+    }
+
+    @Override
+    public void rejectParticipant(Long sessionId, Long userId) {
+        SessionParticipant participant = sessionParticipantRepository.findBySessionIdAndUserId(sessionId, userId)
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Participant not found"));
+        participant.setStatus(ParticipantStatus.REJECTED);
+        sessionParticipantRepository.save(participant);
+    }
+
+    @Override
+    public BrainstormingSession terminateSession(Long id, String userEmail) {
+        BrainstormingSession session = getSessionById(id);
+        User user = userRepository.findByEmail(userEmail)
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "User not found with email: " + userEmail));
+
+        if (!user.getId().equals(session.getCreatedByUserId()) && user.getSystemRole() != SystemRole.ADMIN) {
+            throw new ResponseStatusException(HttpStatus.FORBIDDEN, "Seul le créateur de la session (l'animateur) peut la clôturer.");
+        }
+
+        session.setStatus(SessionStatus.COMPLETED);
+        return brainstormingSessionRepository.save(session);
     }
 }

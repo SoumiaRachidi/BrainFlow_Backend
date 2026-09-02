@@ -12,6 +12,7 @@ public class UserResponseDTO {
     private SystemRole systemRole;
     private LocalDateTime createdAt;
     private LocalDateTime updatedAt;
+    private boolean approved;
 
     public UserResponseDTO() {
     }
@@ -23,6 +24,17 @@ public class UserResponseDTO {
         this.systemRole = systemRole;
         this.createdAt = createdAt;
         this.updatedAt = updatedAt;
+        this.approved = true;
+    }
+
+    public UserResponseDTO(Long id, String username, String email, SystemRole systemRole, LocalDateTime createdAt, LocalDateTime updatedAt, boolean approved) {
+        this.id = id;
+        this.username = username;
+        this.email = email;
+        this.systemRole = systemRole;
+        this.createdAt = createdAt;
+        this.updatedAt = updatedAt;
+        this.approved = approved;
     }
 
     public Long getId() {
@@ -71,5 +83,13 @@ public class UserResponseDTO {
 
     public void setUpdatedAt(LocalDateTime updatedAt) {
         this.updatedAt = updatedAt;
+    }
+
+    public boolean isApproved() {
+        return approved;
+    }
+
+    public void setApproved(boolean approved) {
+        this.approved = approved;
     }
 }

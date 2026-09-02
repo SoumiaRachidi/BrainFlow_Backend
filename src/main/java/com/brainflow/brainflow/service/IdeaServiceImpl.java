@@ -2,6 +2,7 @@ package com.brainflow.brainflow.service;
 
 import com.brainflow.brainflow.entity.BrainstormingSession;
 import com.brainflow.brainflow.entity.Idea;
+import com.brainflow.brainflow.entity.NotificationType;
 import com.brainflow.brainflow.entity.User;
 import com.brainflow.brainflow.repository.BrainstormingSessionRepository;
 import com.brainflow.brainflow.repository.IdeaRepository;
@@ -19,12 +20,19 @@ public class IdeaServiceImpl implements IdeaService {
     private final IdeaRepository ideaRepository;
     private final BrainstormingSessionRepository sessionRepository;
     private final UserRepository userRepository;
+    private final NotificationService notificationService;
 
     @Autowired
-    public IdeaServiceImpl(IdeaRepository ideaRepository, BrainstormingSessionRepository sessionRepository, UserRepository userRepository) {
+    public IdeaServiceImpl(
+            IdeaRepository ideaRepository,
+            BrainstormingSessionRepository sessionRepository,
+            UserRepository userRepository,
+            NotificationService notificationService
+    ) {
         this.ideaRepository = ideaRepository;
         this.sessionRepository = sessionRepository;
         this.userRepository = userRepository;
+        this.notificationService = notificationService;
     }
 
     @Override
@@ -86,6 +94,28 @@ public class IdeaServiceImpl implements IdeaService {
             existing.getVoters().remove(voterToRemove);
         } else {
             existing.getVoters().add(user);
+
+            // Notify Animator when a vote is added
+            BrainstormingSession session = existing.getSession();
+            if (session != null && session.getCreatedByUserId() != null) {
+                if (!session.getCreatedByUserId().equals(user.getId())) {
+                    userRepository.findById(session.getCreatedByUserId()).ifPresent(animator -> {
+                        String voterName = (user.getUsername() != null && !user.getUsername().isBlank())
+                                ? user.getUsername()
+                                : user.getEmail();
+                        String ideaExcerpt = existing.getContent() != null ? existing.getContent() : "";
+                        String message = voterName + " a soutenu votre idée : \"" + ideaExcerpt + "\"";
+
+                        notificationService.createNotification(
+                                animator.getEmail(),
+                                "Nouveau Vote",
+                                message,
+                                NotificationType.IDEA_VOTE,
+                                "/board/" + session.getId()
+                        );
+                    });
+                }
+            }
         }
         existing.setVotes(existing.getVoters().size());
         return ideaRepository.save(existing);

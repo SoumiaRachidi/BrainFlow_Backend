@@ -26,4 +26,8 @@ public interface BrainstormingSessionService {
     List<ParticipantResponseDTO> getWaitingParticipants(Long sessionId);
 
     void approveParticipant(Long sessionId, Long userId);
+
+    void rejectParticipant(Long sessionId, Long userId);
+
+    BrainstormingSession terminateSession(Long id, String userEmail);
 }

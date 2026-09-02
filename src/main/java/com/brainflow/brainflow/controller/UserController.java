@@ -1,5 +1,6 @@
 package com.brainflow.brainflow.controller;
 
+import com.brainflow.brainflow.dto.request.UserProfileUpdateRequestDTO;
 import com.brainflow.brainflow.dto.request.UserRegistrationDto;
 import com.brainflow.brainflow.dto.response.UserResponseDTO;
 import com.brainflow.brainflow.entity.User;
@@ -12,6 +13,8 @@ import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.web.bind.annotation.CrossOrigin;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.PutMapping;
+import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
@@ -48,9 +51,32 @@ public class UserController {
                 user.getEmail(),
                 user.getSystemRole(),
                 user.getCreatedAt(),
-                user.getUpdatedAt()
+                user.getUpdatedAt(),
+                user.isApproved()
         );
         return ResponseEntity.ok(response);
+    }
+
+    @PutMapping("/me")
+    public ResponseEntity<?> updateMe(
+            @AuthenticationPrincipal UserDetails userDetails,
+            @RequestBody UserProfileUpdateRequestDTO updateRequest
+    ) {
+        try {
+            User updatedUser = userService.updateProfile(userDetails.getUsername(), updateRequest);
+            UserResponseDTO response = new UserResponseDTO(
+                    updatedUser.getId(),
+                    updatedUser.getUsername(),
+                    updatedUser.getEmail(),
+                    updatedUser.getSystemRole(),
+                    updatedUser.getCreatedAt(),
+                    updatedUser.getUpdatedAt(),
+                    updatedUser.isApproved()
+            );
+            return ResponseEntity.ok(response);
+        } catch (RuntimeException exception) {
+            return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(exception.getMessage());
+        }
     }
 
     @GetMapping("/me/sessions")
@@ -68,9 +94,41 @@ public class UserController {
                         user.getEmail(),
                         user.getSystemRole(),
                         user.getCreatedAt(),
-                        user.getUpdatedAt()
+                        user.getUpdatedAt(),
+                        user.isApproved()
                 ))
                 .collect(java.util.stream.Collectors.toList());
         return ResponseEntity.ok(users);
+    }
+
+    @PutMapping("/{id}/approve")
+    @org.springframework.security.access.prepost.PreAuthorize("hasRole('ADMIN')")
+    public ResponseEntity<?> approveUser(@PathVariable Long id) {
+        try {
+            User approvedUser = userService.approveUser(id);
+            UserResponseDTO response = new UserResponseDTO(
+                    approvedUser.getId(),
+                    approvedUser.getUsername(),
+                    approvedUser.getEmail(),
+                    approvedUser.getSystemRole(),
+                    approvedUser.getCreatedAt(),
+                    approvedUser.getUpdatedAt(),
+                    approvedUser.isApproved()
+            );
+            return ResponseEntity.ok(response);
+        } catch (RuntimeException exception) {
+            return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(exception.getMessage());
+        }
+    }
+
+    @PutMapping("/{id}/reject")
+    @org.springframework.security.access.prepost.PreAuthorize("hasRole('ADMIN')")
+    public ResponseEntity<?> rejectUser(@PathVariable Long id) {
+        try {
+            userService.rejectUser(id);
+            return ResponseEntity.ok("User request rejected and deleted");
+        } catch (RuntimeException exception) {
+            return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(exception.getMessage());
+        }
     }
 }

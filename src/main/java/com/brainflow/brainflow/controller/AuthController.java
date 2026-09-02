@@ -27,6 +27,8 @@ public class AuthController {
         try {
             JwtResponseDTO response = authService.authenticate(loginRequest);
             return ResponseEntity.ok(response);
+        } catch (com.brainflow.brainflow.exception.UserNotApprovedException ex) {
+            return ResponseEntity.status(HttpStatus.FORBIDDEN).body(ex.getMessage());
         } catch (RuntimeException ex) {
             return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body(ex.getMessage());
         }

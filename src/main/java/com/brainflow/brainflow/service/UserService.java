@@ -1,5 +1,6 @@
 package com.brainflow.brainflow.service;
 
+import com.brainflow.brainflow.dto.request.UserProfileUpdateRequestDTO;
 import com.brainflow.brainflow.dto.request.UserRegistrationDto;
 import com.brainflow.brainflow.entity.User;
 
@@ -12,4 +13,10 @@ public interface UserService {
     User getUserByEmail(String email);
 
     List<User> getAllUsers();
+
+    User approveUser(Long id);
+
+    void rejectUser(Long id);
+
+    User updateProfile(String currentEmail, UserProfileUpdateRequestDTO updateRequest);
 }

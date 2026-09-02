@@ -46,6 +46,10 @@ public class Idea {
     @JsonIgnore
     private Set<User> voters = new HashSet<>();
 
+    @OneToMany(mappedBy = "idea", cascade = CascadeType.ALL, orphanRemoval = true)
+    @JsonIgnore
+    private Set<IdeaComment> ideaComments = new HashSet<>();
+
     @Transient
     private Boolean votedByMe = false;
 
@@ -137,6 +141,14 @@ public class Idea {
 
     public void setVoters(Set<User> voters) {
         this.voters = voters;
+    }
+
+    public Set<IdeaComment> getIdeaComments() {
+        return ideaComments;
+    }
+
+    public void setIdeaComments(Set<IdeaComment> ideaComments) {
+        this.ideaComments = ideaComments;
     }
 
     public Boolean getVotedByMe() {

@@ -38,6 +38,10 @@ public class AuthServiceImpl implements AuthService {
             throw new RuntimeException("Invalid credentials");
         }
 
+        if (!user.isApproved()) {
+            throw new com.brainflow.brainflow.exception.UserNotApprovedException("Votre compte animateur est en attente d'approbation par l'administrateur.");
+        }
+
         List<String> roles = new ArrayList<>();
         if (user.getSystemRole() != null) {
             roles.add(user.getSystemRole().name());

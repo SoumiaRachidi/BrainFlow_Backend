@@ -34,10 +34,11 @@ public class SecurityConfig {
                         .requestMatchers(HttpMethod.POST, "/api/users/register", "/api/users/login").permitAll()
                         .requestMatchers(HttpMethod.GET, "/api/sessions/join/**").permitAll()
                         .requestMatchers(HttpMethod.OPTIONS, "/**").permitAll()
-                        .requestMatchers("/api/sessions/**").authenticated()
-                        .requestMatchers("/api/ideas/**").authenticated()
-                        .requestMatchers("/api/decisions/**").authenticated()
-                        .requestMatchers("/api/comments/**").authenticated()
+                        .requestMatchers("/api/notifications", "/api/notifications/**").authenticated()
+                        .requestMatchers("/api/sessions", "/api/sessions/**").authenticated()
+                        .requestMatchers("/api/ideas", "/api/ideas/**").authenticated()
+                        .requestMatchers("/api/decisions", "/api/decisions/**").authenticated()
+                        .requestMatchers("/api/comments", "/api/comments/**").authenticated()
                         .anyRequest().authenticated())
                 .addFilterBefore(jwtAuthenticationFilter, org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter.class);
         return http.build();
@@ -51,9 +52,10 @@ public class SecurityConfig {
     @Bean
     public CorsConfigurationSource corsConfigurationSource() {
         CorsConfiguration configuration = new CorsConfiguration();
-        configuration.setAllowedOrigins(List.of("http://localhost:3000", "http://192.168.1.27:3000"));
+        configuration.setAllowedOriginPatterns(List.of("*"));
         configuration.setAllowedMethods(List.of("GET", "POST", "PUT", "DELETE", "OPTIONS"));
         configuration.addAllowedHeader("*");
+        configuration.setAllowCredentials(true);
 
         UrlBasedCorsConfigurationSource source = new UrlBasedCorsConfigurationSource();
         source.registerCorsConfiguration("/**", configuration);
